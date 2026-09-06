@@ -25,6 +25,8 @@ services:
       - VPN_PORT_FORWARDING_PROVIDER=protonvpn
       - TZ=${TZ:-America/Argentina/Mendoza}
       - UPDATER_PERIOD=24h
+    volumes:
+      - gluetun-data:/tmp/gluetun
     networks:
       - media-net
 
@@ -48,6 +50,24 @@ services:
     volumes:
       - ${CONFIG_DIR}/qbittorrent:/config
       - ${DATA_DIR}/torrents:/data/torrents
+
+  # =========================================================================
+  # Sincronizador Automático de Puerto ProtonVPN (Gluetun -> qBittorrent)
+  # =========================================================================
+  gluetun-sync:
+    image: curlimages/curl:latest
+    container_name: gluetun-sync
+    restart: unless-stopped
+    network_mode: "service:gluetun"
+    volumes:
+      - gluetun-data:/tmp/gluetun:ro
+      - ./scripts/docker_sync_port.sh:/sync_port.sh:ro
+    entrypoint: ["/bin/sh", "/sync_port.sh"]
+    depends_on:
+      gluetun:
+        condition: service_healthy
+      qbittorrent:
+        condition: service_started
 
   # =========================================================================
   # Indexer Manager (Prowlarr) - Reemplaza al viejo Jackett
@@ -181,3 +201,7 @@ networks:
   media-net:
     name: media-net
     driver: bridge
+
+volumes:
+  gluetun-data:
+    name: gluetun-data
