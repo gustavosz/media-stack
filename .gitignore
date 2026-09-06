@@ -6,6 +6,7 @@
 # Configuraciones de aplicaciones, bases de datos SQLite y cachés
 config/
 data/
+docs/
 
 # Archivos del sistema macOS
 .DS_Store
