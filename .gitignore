@@ -1,0 +1,20 @@
+# Secretos y credenciales personales (NUNCA subir a GitHub)
+.env
+*.env
+!.env.example
+
+# Configuraciones de aplicaciones, bases de datos SQLite y cachés
+config/
+data/
+
+# Archivos del sistema macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Logs y temporales
+*.log
+*.tmp
