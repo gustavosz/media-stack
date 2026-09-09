@@ -19,29 +19,32 @@ Stack completo y automatizado para correr tu propio servidor de películas y ser
 ## 📐 Arquitectura
 
 ```mermaid
-graph TD
-    User([Usuario / Smart TV]) -->|Navega / Pide contenido| JS[Jellyseerr :5055]
-    User -->|Streaming de video| JF[Jellyfin :8096]
+flowchart TD
+    User(["Usuario / Smart TV"]) -->|Navega / Pide contenido| JS["Jellyseerr :5055"]
+    User -->|Streaming de video| JF["Jellyfin :8096"]
     
-    JS -->|Solicita serie| Sonarr[Sonarr :8989]
-    JS -->|Solicita película| Radarr[Radarr :7878]
+    JS -->|Solicita serie| Sonarr["Sonarr :8989"]
+    JS -->|Solicita película| Radarr["Radarr :7878"]
     
-    subgraph Indexers
-        Prowlarr[Prowlarr :9696] -->|Sincroniza trackers| Sonarr & Radarr
-        Prowlarr -->|Bypass Cloudflare| FS[FlareSolverr :8191]
+    subgraph Indexers ["Indexadores"]
+        Prowlarr["Prowlarr :9696"] -->|Sincroniza trackers| Sonarr
+        Prowlarr -->|Sincroniza trackers| Radarr
+        Prowlarr -->|Bypass Cloudflare| FS["FlareSolverr :8191"]
     end
     
-    subgraph Red Protegida VPN (Gluetun)
-        VPN[Túnel ProtonVPN WireGuard]
-        QB[qBittorrent WebUI :8080]
+    subgraph VPN ["Red Protegida VPN (Gluetun)"]
+        Tunnel["Túnel ProtonVPN WireGuard"]
+        QB["qBittorrent WebUI :8080"]
     end
     
-    Sonarr & Radarr -->|Envía Torrents a través de VPN| QB
+    Sonarr -->|Envía Torrents por VPN| QB
+    Radarr -->|Envía Torrents por VPN| QB
     
-    subgraph Almacenamiento (TRaSH Guides)
+    subgraph Storage ["Almacenamiento (TRaSH Guides)"]
         QB -->|Escribe descargas| TOR["/data/torrents/"]
-        Sonarr & Radarr -.->|Hardlinks atómicos| MED["/data/media/"]
-        Bazarr[Bazarr :6767] -->|Descarga .srt| MED
+        Sonarr -.->|Hardlinks atómicos| MED["/data/media/"]
+        Radarr -.->|Hardlinks atómicos| MED
+        Bazarr["Bazarr :6767"] -->|Descarga .srt| MED
         JF -->|Lee biblioteca final| MED
     end
 ```
