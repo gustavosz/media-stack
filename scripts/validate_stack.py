@@ -103,10 +103,32 @@ def check_docker_containers():
             else:
                 all_ok = False
                 print(f"  {RED}✘{RESET} {name:<16} : {RED}{state}{RESET}")
-        return all_ok
+
+        # Comprobar si las monturas de disco externo /data están activas dentro del contenedor
+        print(f"\n  {BOLD}Puntos de montaje de almacenamiento (/data):{RESET}")
+        stale_containers = []
+        for name in ["jellyfin", "radarr", "sonarr", "bazarr", "qbittorrent"]:
+            if running.get(name) in ("running", "healthy"):
+                test_dir = "/data/media" if name in ("bazarr", "jellyfin") else ("/data/torrents" if name == "qbittorrent" else "/data")
+                chk = subprocess.run(
+                    ["docker", "compose", "-f", str(PROJECT_DIR / "docker-compose.yml"), "exec", "-T", name, "test", "-d", test_dir],
+                    capture_output=True
+                )
+                if chk.returncode == 0:
+                    print(f"  {GREEN}✔{RESET} {name:<16} : {GREEN}Montura activa ({test_dir}){RESET}")
+                else:
+                    all_ok = False
+                    stale_containers.append(name)
+                    print(f"  {RED}✘{RESET} {name:<16} : {RED}DESCONECTADA (stale mount en {test_dir}){RESET}")
+
+        if stale_containers:
+            print(f"\n  {YELLOW}⚠ Detectadas monturas caídas en: {', '.join(stale_containers)}.{RESET}")
+            print(f"  {YELLOW}  Ejecuta: python3 scripts/validate_stack.py --fix  para reconectarlas automáticamente.{RESET}")
+
+        return all_ok, stale_containers
     except Exception as e:
         print(f"  {RED}✘ Error consultando Docker:{RESET} {e}")
-        return False
+        return False, []
 
 def check_vpn_and_port():
     print_header("2. VPN PROTONVPN Y SINCRONIZACIÓN DE PUERTO")
@@ -262,22 +284,30 @@ def main():
     parser.add_argument("--subs", action="store_true", help="Auditar solo medios, hardlinks y subtítulos")
     parser.add_argument("--net", action="store_true", help="Auditar solo VPN y sincronización de puertos")
     parser.add_argument("--services", action="store_true", help="Auditar solo estado de Docker y APIs")
+    parser.add_argument("--fix", action="store_true", help="Reiniciar automáticamente contenedores con monturas desconectadas")
     args = parser.parse_args()
 
     print(f"\n{BOLD}{GREEN}🔍 INICIANDO AUDITORÍA DEL MEDIA STACK{RESET}")
 
+    stale_containers = []
     if args.subs:
         check_media_and_subtitles()
     elif args.net:
         check_vpn_and_port()
     elif args.services:
-        check_docker_containers()
+        _, stale_containers = check_docker_containers()
         check_services_api()
     else:
-        check_docker_containers()
+        _, stale_containers = check_docker_containers()
         check_vpn_and_port()
         check_services_api()
         check_media_and_subtitles()
+
+    if args.fix and stale_containers:
+        print(f"\n{BOLD}{CYAN}🔧 REPARANDO MONTURAS DESCONECTADAS...{RESET}")
+        cmd = ["docker", "compose", "-f", str(PROJECT_DIR / "docker-compose.yml"), "restart"] + stale_containers
+        subprocess.run(cmd, check=True)
+        print(f"{GREEN}✔ Contenedores reiniciados y monturas reconectadas exitosamente.{RESET}\n")
 
     print(f"{BOLD}{GREEN}✨ Auditoría completada.{RESET}\n")
 
