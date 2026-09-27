@@ -178,7 +178,7 @@ def check_services_api():
     jellyfin_key = "4a6d8f1e2b3c4d5e6f7a8b9c0d1e2f3a"
 
     services = [
-        ("Jellyfin",    "http://localhost:8096/System/Info", {"X-Emby-Token": jellyfin_key}),
+        ("Jellyfin",    "http://localhost:8096/System/Info", {"Authorization": f'MediaBrowser Token="{jellyfin_key}"', "X-Emby-Token": jellyfin_key}),
         ("Jellyseerr",  "http://localhost:5055/api/v1/status", {}),
         ("Radarr",      "http://localhost:7878/api/v3/system/status", {"X-Api-Key": radarr_key}),
         ("Sonarr",      "http://localhost:8989/api/v3/system/status", {"X-Api-Key": sonarr_key}),
@@ -214,7 +214,7 @@ def check_media_and_subtitles():
 
     jellyfin_key = "4a6d8f1e2b3c4d5e6f7a8b9c0d1e2f3a"
     jf_items_url = "http://localhost:8096/Items?recursive=true&includeItemTypes=Movie&fields=MediaStreams,Path"
-    jf_data, _ = api_get(jf_items_url, headers={"X-Emby-Token": jellyfin_key})
+    jf_data, _ = api_get(jf_items_url, headers={"Authorization": f'MediaBrowser Token="{jellyfin_key}"', "X-Emby-Token": jellyfin_key})
     jf_items = jf_data.get("Items", []) if isinstance(jf_data, dict) else []
     
     # Mapear por nombre de carpeta física
