@@ -197,6 +197,64 @@ services:
     networks:
       - media-net
 
+  # =========================================================================
+  # Gestión y Automatización de Libros / Audiobooks (Chaptarr - Sucesor activo de Readarr)
+  # =========================================================================
+  chaptarr:
+    image: chaptarr/chaptarr:latest
+    container_name: chaptarr
+    restart: unless-stopped
+    expose:
+      - "8789"
+    environment:
+      - PUID=${PUID:-501}
+      - PGID=${PGID:-20}
+      - TZ=${TZ:-America/Argentina/Mendoza}
+    volumes:
+      - ${CONFIG_DIR}/chaptarr:/config
+      # Monta /data entero para permitir hardlinks entre torrents/books y media/books
+      - ${DATA_DIR}:/data
+    networks:
+      - media-net
+
+  # Proxy inteligente para Chaptarr (Reenvío a Goodreads y enriquecimiento de carátulas para nzb360)
+  chaptarr-proxy:
+    image: python:3.11-alpine
+    container_name: chaptarr-proxy
+    restart: unless-stopped
+    command: python3 -u /app/proxy.py
+    ports:
+      - "8787:8787"
+      - "8789:8787"
+    volumes:
+      - ${CONFIG_DIR}/chaptarr-proxy/proxy.py:/app/proxy.py:ro
+    depends_on:
+      - chaptarr
+    networks:
+      - media-net
+
+  # =========================================================================
+  # Biblioteca Web y Envío al Kindle (Calibre-Web)
+  # =========================================================================
+  calibre-web:
+    image: lscr.io/linuxserver/calibre-web:latest
+    container_name: calibre-web
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      - PUID=${PUID:-501}
+      - PGID=${PGID:-20}
+      - TZ=${TZ:-America/Argentina/Mendoza}
+      - DOCKER_MODS=linuxserver/mods:universal-calibre
+    volumes:
+      - ${CONFIG_DIR}/calibre-web:/config
+      - ${DATA_DIR}/media/books:/books
+      - ${DATA_DIR}/import_books:/import_books
+      - ${CONFIG_DIR}/calibre-web/custom-cont-init.d:/custom-cont-init.d
+    networks:
+      - media-net
+
 networks:
   media-net:
     name: media-net

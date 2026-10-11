@@ -85,7 +85,7 @@ def check_docker_containers():
     expected = [
         "gluetun", "qbittorrent", "gluetun-sync", "prowlarr",
         "flaresolverr", "radarr", "sonarr", "bazarr",
-        "jellyfin", "jellyseerr"
+        "jellyfin", "jellyseerr", "chaptarr", "chaptarr-proxy", "calibre-web"
     ]
     try:
         res = subprocess.run(
@@ -107,9 +107,9 @@ def check_docker_containers():
         # Comprobar si las monturas de disco externo /data están activas dentro del contenedor
         print(f"\n  {BOLD}Puntos de montaje de almacenamiento (/data):{RESET}")
         stale_containers = []
-        for name in ["jellyfin", "radarr", "sonarr", "bazarr", "qbittorrent"]:
+        for name in ["jellyfin", "radarr", "sonarr", "chaptarr", "calibre-web", "bazarr", "qbittorrent"]:
             if running.get(name) in ("running", "healthy"):
-                test_dir = "/data/media" if name in ("bazarr", "jellyfin") else ("/data/torrents" if name == "qbittorrent" else "/data")
+                test_dir = "/books" if name == "calibre-web" else ("/data/media" if name in ("bazarr", "jellyfin") else ("/data/torrents" if name == "qbittorrent" else "/data"))
                 chk = subprocess.run(
                     ["docker", "compose", "-f", str(PROJECT_DIR / "docker-compose.yml"), "exec", "-T", name, "test", "-d", test_dir],
                     capture_output=True
@@ -173,6 +173,7 @@ def check_services_api():
     print_header("3. ESTADO DE SERVICIOS Y APIS WEB")
     radarr_key = get_api_key_from_xml(CONFIG_DIR / "radarr" / "config.xml")
     sonarr_key = get_api_key_from_xml(CONFIG_DIR / "sonarr" / "config.xml")
+    chaptarr_key = get_api_key_from_xml(CONFIG_DIR / "chaptarr" / "config.xml")
     prowlarr_key = get_api_key_from_xml(CONFIG_DIR / "prowlarr" / "config.xml")
     bazarr_key = get_bazarr_api_key()
     jellyfin_key = "4a6d8f1e2b3c4d5e6f7a8b9c0d1e2f3a"
@@ -182,6 +183,8 @@ def check_services_api():
         ("Jellyseerr",  "http://localhost:5055/api/v1/status", {}),
         ("Radarr",      "http://localhost:7878/api/v3/system/status", {"X-Api-Key": radarr_key}),
         ("Sonarr",      "http://localhost:8989/api/v3/system/status", {"X-Api-Key": sonarr_key}),
+        ("Chaptarr",    "http://localhost:8787/api/v1/system/status", {"X-Api-Key": chaptarr_key}),
+        ("Calibre-Web", "http://localhost:8083/login", {}),
         ("Prowlarr",    "http://localhost:9696/api/v1/system/status", {"X-Api-Key": prowlarr_key}),
         ("Bazarr",      "http://localhost:6767/api/system/status", {"X-Api-Key": bazarr_key}),
         ("qBittorrent", "http://localhost:8080/api/v2/app/version", {}),
