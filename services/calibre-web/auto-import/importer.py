@@ -4,6 +4,8 @@ Calibre-Web Automated Book Importer & Kindle Delivery Pipeline.
 Structured with Domain Value Objects, Repositories, and Application Services.
 """
 
+from __future__ import annotations
+
 import os
 import re
 import shutil
@@ -18,8 +20,6 @@ from email.message import EmailMessage
 from pathlib import Path
 from typing import List, Optional
 from xml.etree import ElementTree
-
-from cryptography.fernet import Fernet
 
 
 def log(msg: str) -> None:
@@ -73,6 +73,8 @@ class CalibreSettingsRepository:
 
     def get_smtp_credentials(self) -> Optional[SmtpCredentials]:
         try:
+            from cryptography.fernet import Fernet
+
             if not os.path.exists(self._db_path) or not os.path.exists(self._key_path):
                 return None
             with open(self._key_path, "rb") as f:

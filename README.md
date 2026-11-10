@@ -114,6 +114,7 @@ Ejecuta `make help` para ver todos los comandos disponibles:
 | `make daemon-install` | Instala y activa el daemon de auto-recuperación de discos externos en macOS (`launchd`) |
 | `make daemon-status` | Verifica el estado actual del daemon de monitoreo de discos |
 | `make daemon-uninstall` | Detiene y elimina el daemon de auto-recuperación de discos en macOS |
+| `make test` | Ejecuta la suite completa de tests unitarios (Dominio, Aplicación, Infraestructura y Servicios) |
 
 ---
 

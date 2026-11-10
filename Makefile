@@ -4,7 +4,7 @@
 PYTHONPATH := $(CURDIR)/src
 PYTHON     := PYTHONPATH=$(PYTHONPATH) python3 -m media_stack
 
-.PHONY: help up down restart ps logs audit sync-port daemon-install daemon-uninstall daemon-status
+.PHONY: help up down restart ps logs audit sync-port daemon-install daemon-uninstall daemon-status test
 
 help: ## Muestra esta guía de comandos disponibles
 	@echo ""
@@ -42,3 +42,6 @@ daemon-uninstall: ## Detiene y desinstala el daemon de auto-recuperación de dis
 
 daemon-status: ## Verifica el estado actual del daemon de monitoreo de discos
 	@$(PYTHON) daemon status
+
+test: ## Ejecuta la suite completa de tests unitarios (Dominio, Aplicación, Infraestructura y Servicios)
+	@PYTHONPATH=$(PYTHONPATH) python3 -m unittest discover -s tests -p "test_*.py" -v
