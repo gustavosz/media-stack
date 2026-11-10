@@ -8,6 +8,9 @@ from unittest.mock import patch
 
 from media_stack.infrastructure.credential_store import ConfigFileCredentialStore
 from media_stack.infrastructure.settings import AppSettings
+from media_stack.infrastructure.stack_provisioner_adapter import (
+    HttpAndFilesystemStackProvisioner,
+)
 
 
 class TestInfrastructureConfigAndCredentials(unittest.TestCase):
@@ -86,6 +89,28 @@ class TestInfrastructureConfigAndCredentials(unittest.TestCase):
             self.assertEqual(bazarr_key.expose(), "bazarr_secret_987654")  # type: ignore[union-attr]
             self.assertIsNotNone(jf_key)
             self.assertEqual(jf_key.expose(), "jf_secret_token_abcdef")  # type: ignore[union-attr]
+
+    def test_provisioner_creates_storage_dirs_and_initializes_qbit_conf(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            data_dir = root / "data"
+            cfg_dir = root / "config"
+            store = ConfigFileCredentialStore(cfg_dir)
+            provisioner = HttpAndFilesystemStackProvisioner(data_dir, cfg_dir, store)
+
+            dir_step = provisioner.ensure_storage_directories()
+            self.assertTrue(dir_step.succeeded)
+            self.assertTrue((data_dir / "torrents" / "movies").is_dir())
+            self.assertTrue((data_dir / "media" / "movies").is_dir())
+            self.assertTrue((data_dir / "import_books").is_dir())
+
+            qbit_step = provisioner.ensure_qbittorrent_config()
+            self.assertTrue(qbit_step.succeeded)
+            qbit_conf = (
+                cfg_dir / "qbittorrent" / "qBittorrent" / "qBittorrent.conf"
+            ).read_text(encoding="utf-8")
+            self.assertIn("WebUI\\LocalHostAuth=false", qbit_conf)
+            self.assertIn("Session\\DefaultSavePath=/data/torrents", qbit_conf)
 
 
 class TestChaptarrProxyService(unittest.TestCase):

@@ -4,6 +4,7 @@ import datetime
 from typing import Optional
 
 from media_stack.application.audit_stack_use_case import AuditStackUseCase
+from media_stack.application.bootstrap_stack_use_case import BootstrapStackUseCase
 from media_stack.application.manage_daemon_use_case import ManageDaemonUseCase
 from media_stack.application.monitor_disk_use_case import MonitorDiskRecoveryUseCase
 from media_stack.application.sync_vpn_port_use_case import SyncVpnPortUseCase
@@ -24,6 +25,9 @@ from media_stack.infrastructure.macos_system_services import (
     MacOSNotificationService,
 )
 from media_stack.infrastructure.settings import AppSettings
+from media_stack.infrastructure.stack_provisioner_adapter import (
+    HttpAndFilesystemStackProvisioner,
+)
 
 
 class DependencyContainer:
@@ -55,6 +59,17 @@ class DependencyContainer:
         self.daemon_manager = MacOSLaunchdDaemonManager(
             project_dir=self.settings.project_dir,
             config_dir=self.settings.config_dir,
+        )
+        self.provisioner = HttpAndFilesystemStackProvisioner(
+            data_dir=self.settings.data_dir,
+            config_dir=self.settings.config_dir,
+            credential_store=self.credential_store,
+        )
+
+    def build_bootstrap_use_case(self) -> BootstrapStackUseCase:
+        return BootstrapStackUseCase(
+            provisioner=self.provisioner,
+            vpn_gateway=self.vpn_gateway,
         )
 
     def build_audit_use_case(self) -> AuditStackUseCase:

@@ -4,9 +4,11 @@ import unittest
 from unittest.mock import patch
 
 from media_stack.application.audit_stack_use_case import AuditStackUseCase
+from media_stack.application.bootstrap_stack_use_case import BootstrapStackUseCase
 from media_stack.application.manage_daemon_use_case import ManageDaemonUseCase
 from media_stack.application.monitor_disk_use_case import MonitorDiskRecoveryUseCase
 from media_stack.application.sync_vpn_port_use_case import SyncVpnPortUseCase
+from media_stack.domain.entities.bootstrap_step import BootstrapStepResult
 from media_stack.domain.entities.container import ContainerMountCheck, ContainerNode
 from media_stack.domain.entities.media_item import MovieMediaAsset
 from media_stack.domain.entities.service_health import ServiceHealthResult
@@ -19,6 +21,7 @@ from media_stack.domain.repositories.media_library_repository import (
 from media_stack.domain.repositories.service_health_gateway import (
     IServiceHealthGateway,
 )
+from media_stack.domain.repositories.stack_provisioner import IStackProvisioner
 from media_stack.domain.repositories.system_services import (
     IDaemonManager,
     INotificationService,
@@ -171,6 +174,29 @@ class FakeDaemonManager(IDaemonManager):
         return "1234 0 com.media-stack.disk-watcher" if self.installed else None
 
 
+class FakeStackProvisioner(IStackProvisioner):
+    def ensure_storage_directories(self) -> BootstrapStepResult:
+        return BootstrapStepResult("Dirs", True, "OK")
+
+    def ensure_qbittorrent_config(self) -> BootstrapStepResult:
+        return BootstrapStepResult("qBit Conf", True, "OK")
+
+    def ensure_arr_root_folders(self) -> List[BootstrapStepResult]:
+        return [BootstrapStepResult("Root Folders", True, "OK")]
+
+    def ensure_arr_download_clients(self) -> List[BootstrapStepResult]:
+        return [BootstrapStepResult("Download Clients", True, "OK")]
+
+    def ensure_prowlarr_integrations(self) -> List[BootstrapStepResult]:
+        return [BootstrapStepResult("Prowlarr", True, "OK")]
+
+    def ensure_bazarr_integrations(self) -> BootstrapStepResult:
+        return BootstrapStepResult("Bazarr", True, "OK")
+
+    def ensure_calibre_library_initialized(self) -> BootstrapStepResult:
+        return BootstrapStepResult("Calibre", True, "OK")
+
+
 # ------------------------------------------------------------------------------
 # Use Case Tests
 # ------------------------------------------------------------------------------
@@ -278,6 +304,22 @@ class TestApplicationUseCases(unittest.TestCase):
         removed = use_case.uninstall()
         self.assertEqual(len(removed), 1)
         self.assertIsNone(use_case.status())
+
+    def test_bootstrap_stack_use_case_executes_all_provisioning_steps(self) -> None:
+        provisioner = FakeStackProvisioner()
+        vpn = FakeVpnGateway(
+            VpnTunnelStatus(
+                forwarded_port=PortNumber(63398),
+                qbit_listen_port=PortNumber(50000),
+            )
+        )
+        use_case = BootstrapStackUseCase(provisioner=provisioner, vpn_gateway=vpn)
+        steps = use_case.execute()
+
+        self.assertEqual(len(steps), 8)
+        self.assertTrue(all(s.succeeded for s in steps))
+        self.assertEqual(len(vpn.applied_profiles), 1)
+        self.assertEqual(vpn.updated_ports, [PortNumber(63398)])
 
 
 if __name__ == "__main__":

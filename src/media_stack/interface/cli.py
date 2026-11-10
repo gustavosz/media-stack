@@ -20,6 +20,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Ejecuta una auditoría completa de contenedores, VPN, APIs, hardlinks y subtítulos.",
     )
 
+    # Subcommand: bootstrap
+    subparsers.add_parser(
+        "bootstrap",
+        help="Inicializa carpetas en DATA_DIR y autoconecta qBittorrent, *Arr, Prowlarr, Bazarr y Calibre.",
+    )
+
     # Subcommand: watch-disk
     subparsers.add_parser(
         "watch-disk",
@@ -55,6 +61,12 @@ def main(argv: list[str] | None = None) -> int:
         use_case = di.build_audit_use_case()
         report = use_case.execute()
         ConsoleAuditPresenter().render(report)
+        return 0
+
+    if args.command == "bootstrap":
+        use_case = di.build_bootstrap_use_case()
+        steps = use_case.execute()
+        ConsoleAuditPresenter().render_bootstrap(steps)
         return 0
 
     if args.command == "watch-disk":

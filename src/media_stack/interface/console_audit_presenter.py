@@ -1,4 +1,7 @@
+from typing import Sequence
+
 from media_stack.application.audit_report_dto import StackAuditReport
+from media_stack.domain.entities.bootstrap_step import BootstrapStepResult
 
 
 class ConsoleAuditPresenter:
@@ -160,3 +163,11 @@ class ConsoleAuditPresenter:
             print()
 
         print(f"{self.BOLD}{self.GREEN}✨ Auditoría completada.{self.RESET}\n")
+
+    def render_bootstrap(self, steps: Sequence[BootstrapStepResult]) -> None:
+        self._print_header("AUTO-APROVISIONAMIENTO E INTERCONEXIÓN DEL MEDIA STACK")
+        for s in steps:
+            icon = f"{self.GREEN}✔{self.RESET}" if s.succeeded else f"{self.YELLOW}⚠{self.RESET}"
+            color = self.GREEN if s.succeeded else self.YELLOW
+            print(f"  {icon} {s.step_name:<36} : {color}{s.details}{self.RESET}")
+        print(f"\n{self.BOLD}{self.GREEN}✨ Bootstrap finalizado.{self.RESET}\n")

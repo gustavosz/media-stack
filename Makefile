@@ -4,7 +4,7 @@
 PYTHONPATH := $(CURDIR)/src
 PYTHON     := PYTHONPATH=$(PYTHONPATH) python3 -m media_stack
 
-.PHONY: help up down restart ps logs audit sync-port daemon-install daemon-uninstall daemon-status test
+.PHONY: help up down restart ps logs bootstrap audit sync-port daemon-install daemon-uninstall daemon-status test
 
 help: ## Muestra esta guía de comandos disponibles
 	@echo ""
@@ -27,6 +27,9 @@ ps: ## Muestra el estado actual de los contenedores
 
 logs: ## Muestra los logs en tiempo real de todos los servicios
 	docker compose logs -f --tail=100
+
+bootstrap: ## Inicializa carpetas en DATA_DIR y autoconecta qBittorrent, *Arr, Prowlarr, Bazarr y Calibre
+	@$(PYTHON) bootstrap
 
 audit: ## Ejecuta la auditoría completa del stack (Contenedores, VPN, APIs, Hardlinks y Subtítulos)
 	@$(PYTHON) audit

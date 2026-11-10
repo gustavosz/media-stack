@@ -84,17 +84,14 @@ VPN_PORT_FORWARDING_PROVIDER=protonvpn
 > 3. Activa la casilla **"NAT-PMP (Port Forwarding)"**.
 > 4. Descarga el archivo `.conf` y copia `PrivateKey` y `Address` a tu `.env`.
 
-### 2. Preparar carpetas en el disco externo
-
-```bash
-mkdir -p /Volumes/Media/data/{torrents/{movies,series,books},media/{movies,series,books},import_books}
-```
-
-### 3. Levantar el Stack
+### 2. Levantar y Auto-Aprovisionar el Stack
 
 ```bash
 make up
+make bootstrap
 ```
+
+> **`make bootstrap`** crea automáticamente toda la estructura de carpetas en `DATA_DIR` (`torrents/`, `media/`, `import_books`), configura `qBittorrent.conf` para permitir Hardlinks APFS, y autoconecta vía API a **Prowlarr**, **FlareSolverr**, **Radarr**, **Sonarr**, **Chaptarr**, **Bazarr**, **qBittorrent** y **Calibre-Web** sin exponer claves privadas en Git.
 
 ---
 
@@ -109,6 +106,7 @@ Ejecuta `make help` para ver todos los comandos disponibles:
 | `make restart` | Reinicia todos los contenedores |
 | `make ps` | Muestra el estado actual de los contenedores |
 | `make logs` | Muestra los logs en tiempo real de todos los servicios |
+| `make bootstrap` | Inicializa carpetas en `DATA_DIR` y autoconecta `qBittorrent`, `*Arr`, `Prowlarr`, `Bazarr` y `Calibre` |
 | `make audit` | Ejecuta la auditoría completa (Contenedores, VPN, APIs, Hardlinks APFS y Subtítulos) |
 | `make sync-port` | Verifica y sincroniza manualmente el puerto NAT-PMP de ProtonVPN con qBittorrent |
 | `make daemon-install` | Instala y activa el daemon de auto-recuperación de discos externos en macOS (`launchd`) |
