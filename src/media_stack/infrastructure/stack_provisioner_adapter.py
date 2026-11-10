@@ -485,6 +485,46 @@ class HttpAndFilesystemStackProvisioner(IStackProvisioner):
                 )
                 modified = True
 
+            jellyfin_key = self._creds.get_jellyfin_api_key()
+            if jellyfin_key and "enabled_integrations: []" in content:
+                content = content.replace(
+                    "enabled_integrations: []",
+                    "enabled_integrations:\n  - jellyfin",
+                    1,
+                )
+                content = re.sub(
+                    r"(jellyfin:\n  apikey: )[^\n]+",
+                    f"\\g<1>{jellyfin_key.expose()}",
+                    content,
+                    count=1,
+                )
+                modified = True
+
+            if "subtitulamostv" not in content and "enabled_providers:" in content:
+                content = re.sub(
+                    r"  enabled_providers:\n(?:  - [^\n]+\n)+",
+                    "  enabled_providers:\n"
+                    "  - opensubtitlescom\n"
+                    "  - subtitulamostv\n"
+                    "  - subtis\n"
+                    "  - subf2m\n"
+                    "  - subtitlecat\n"
+                    "  - gestdown\n"
+                    "  - bsplayer\n"
+                    "  - yifysubtitles\n",
+                    content,
+                    count=1,
+                )
+                content = content.replace(
+                    "subf2m:\n  user_agent: ''",
+                    "subf2m:\n  user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'",
+                )
+                modified = True
+
+            if "  minimum_score: 90" in content:
+                content = content.replace("  minimum_score: 90", "  minimum_score: 80", 1)
+                modified = True
+
             if modified:
                 yaml_path.write_text(content, encoding="utf-8")
 
