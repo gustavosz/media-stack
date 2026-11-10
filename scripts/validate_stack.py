@@ -24,12 +24,36 @@ import argparse
 import subprocess
 import urllib.request
 import urllib.error
+import json
 from pathlib import Path
 from xml.etree import ElementTree
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
-MEDIA_DIR = Path("/Volumes/Media/data/media/movies")
-CONFIG_DIR = PROJECT_DIR / "config"
+def load_env(env_path: Path):
+    """Loads key=value pairs from a .env file into os.environ if not already set."""
+    if not env_path.is_file():
+        return
+    try:
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, val = line.split("=", 1)
+                key = key.strip()
+                val = val.strip().strip("'\"")
+                if key and key not in os.environ:
+                    os.environ[key] = val
+    except Exception:
+        pass
+
+PROJECT_DIR = Path(os.getenv("PROJECT_DIR", Path(__file__).resolve().parent.parent))
+load_env(PROJECT_DIR / ".env")
+
+config_dir_env = os.getenv("CONFIG_DIR", "./config")
+CONFIG_DIR = Path(config_dir_env) if Path(config_dir_env).is_absolute() else (PROJECT_DIR / config_dir_env)
+
+data_dir_env = os.getenv("DATA_DIR", "/Volumes/Media/data")
+MEDIA_DIR = Path(data_dir_env) / "media" / "movies"
 
 GREEN = "\033[92m"
 YELLOW = "\033[93m"
@@ -65,6 +89,22 @@ def get_bazarr_api_key():
     except Exception:
         pass
     return None
+
+def get_jellyfin_api_key():
+    token = os.getenv("JELLYFIN_API_KEY")
+    if token:
+        return token
+    jellyseerr_settings = CONFIG_DIR / "jellyseerr" / "settings.json"
+    if jellyseerr_settings.is_file():
+        try:
+            with open(jellyseerr_settings, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                key = data.get("apiKey")
+                if key:
+                    return key
+        except Exception:
+            pass
+    return "4a6d8f1e2b3c4d5e6f7a8b9c0d1e2f3a"
 
 def api_get(url, headers=None, timeout=4):
     req = urllib.request.Request(url, headers=headers or {})
@@ -176,7 +216,7 @@ def check_services_api():
     chaptarr_key = get_api_key_from_xml(CONFIG_DIR / "chaptarr" / "config.xml")
     prowlarr_key = get_api_key_from_xml(CONFIG_DIR / "prowlarr" / "config.xml")
     bazarr_key = get_bazarr_api_key()
-    jellyfin_key = "4a6d8f1e2b3c4d5e6f7a8b9c0d1e2f3a"
+    jellyfin_key = get_jellyfin_api_key()
 
     services = [
         ("Jellyfin",    "http://localhost:8096/System/Info", {"Authorization": f'MediaBrowser Token="{jellyfin_key}"', "X-Emby-Token": jellyfin_key}),
@@ -215,7 +255,7 @@ def check_media_and_subtitles():
         print(f"  {RED}✘ Directorio de medios no encontrado en {MEDIA_DIR}{RESET}")
         return False
 
-    jellyfin_key = "4a6d8f1e2b3c4d5e6f7a8b9c0d1e2f3a"
+    jellyfin_key = get_jellyfin_api_key()
     jf_items_url = "http://localhost:8096/Items?recursive=true&includeItemTypes=Movie&fields=MediaStreams,Path"
     jf_data, _ = api_get(jf_items_url, headers={"Authorization": f'MediaBrowser Token="{jellyfin_key}"', "X-Emby-Token": jellyfin_key})
     jf_items = jf_data.get("Items", []) if isinstance(jf_data, dict) else []

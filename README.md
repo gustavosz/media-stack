@@ -75,7 +75,7 @@ PUID=501
 PGID=20
 TZ=America/Argentina/Mendoza
 
-CONFIG_DIR=/Users/gsoliz/Code/media-stack/config
+CONFIG_DIR=./config
 DATA_DIR=/Volumes/Media/data
 
 # Configuración ProtonVPN (WireGuard)
@@ -131,6 +131,23 @@ Dentro de la red de Docker (`media-net`), los contenedores se comunican por nomb
   - Sonarr: `http://sonarr:8989`
   - Radarr: `http://radarr:7878`
   *(Prowlarr sincronizará todos tus trackers a ambos automáticamente).*
+
+---
+
+## 🛡️ Auto-Recuperación de Discos Externos (macOS)
+
+Si utilizas un disco duro externo como almacenamiento principal (`DATA_DIR`), el daemon **`disk_watcher`** supervisa el estado del volumen. Si el disco se desconecta y reconecta, o si los contenedores quedan con monturas rotas (*stale mounts*), el daemon reinicia automáticamente los servicios afectados y dispara un reescaneo de Jellyfin sin intervención manual.
+
+Para instalarlo como servicio de inicio en tu usuario de macOS:
+```bash
+./scripts/install_disk_watcher.sh
+```
+
+Para verificar su estado o desinstalarlo:
+```bash
+python3 scripts/disk_watcher.py --status
+./scripts/uninstall_disk_watcher.sh
+```
 
 ---
 

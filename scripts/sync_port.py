@@ -4,16 +4,19 @@ Sincronizador automático de puerto ProtonVPN (Gluetun) -> qBittorrent.
 Lee el puerto asignado por NAT-PMP en Gluetun y lo actualiza en qBittorrent vía API
 sin reiniciar contenedores ni cortar descargas activas.
 """
+import os
 import sys
 import time
 import json
 import urllib.request
 import urllib.parse
 import subprocess
+from pathlib import Path
 from datetime import datetime
 
-PROJECT_DIR = "/Users/gsoliz/Code/media-stack"
-QBITTORRENT_URL = "http://localhost:8080"
+PROJECT_DIR = Path(os.getenv("PROJECT_DIR", Path(__file__).resolve().parent.parent))
+COMPOSE_FILE = PROJECT_DIR / "docker-compose.yml"
+QBITTORRENT_URL = os.getenv("QBITTORRENT_URL", "http://localhost:8080")
 
 def log(msg):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -22,7 +25,7 @@ def log(msg):
 def get_forwarded_port(max_retries=6, delay=3):
     for i in range(max_retries):
         try:
-            cmd = ["docker", "compose", "-f", f"{PROJECT_DIR}/docker-compose.yml", "exec", "gluetun", "cat", "/tmp/gluetun/forwarded_port"]
+            cmd = ["docker", "compose", "-f", str(COMPOSE_FILE), "exec", "gluetun", "cat", "/tmp/gluetun/forwarded_port"]
             out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode().strip()
             if out.isdigit() and int(out) > 0:
                 return int(out)
