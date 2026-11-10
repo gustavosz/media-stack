@@ -14,7 +14,7 @@ services:
       - ${CONFIG_DIR}/calibre-web:/config
       - ${DATA_DIR}/media/books:/books
       - ${DATA_DIR}/import_books:/import_books
-      - ./services/calibre-web/auto-import:/custom-cont-init.d:ro
+      - ./services/calibre-web/custom-cont-init.d:/custom-cont-init.d:ro
       - ./services/calibre-web/auto-import/importer.py:/app/auto_import.py:ro
       - ${CONFIG_DIR}/chaptarr:/chaptarr-config:ro
     networks:
