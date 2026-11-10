@@ -8,7 +8,11 @@ import urllib.request
 
 from media_stack.domain.entities.vpn_tunnel import VpnTunnelStatus
 from media_stack.domain.repositories.vpn_gateway import IVpnGateway
-from media_stack.domain.value_objects.network import IpAddress, PortNumber
+from media_stack.domain.value_objects.network import (
+    BitTorrentPerformanceProfile,
+    IpAddress,
+    PortNumber,
+)
 
 
 class GluetunQbitVpnGateway(IVpnGateway):
@@ -65,6 +69,29 @@ class GluetunQbitVpnGateway(IVpnGateway):
                 f"{self._qbittorrent_url}/api/v2/app/setPreferences", data=payload
             )
             urllib.request.urlopen(req, timeout=5)
+            return True
+        except Exception:
+            return False
+
+    def apply_performance_profile(self, profile: BitTorrentPerformanceProfile) -> bool:
+        try:
+            prefs_payload = urllib.parse.urlencode(
+                {"json": json.dumps(profile.to_qbit_preferences_dict())}
+            ).encode()
+            req_prefs = urllib.request.Request(
+                f"{self._qbittorrent_url}/api/v2/app/setPreferences",
+                data=prefs_payload,
+            )
+            urllib.request.urlopen(req_prefs, timeout=5)
+
+            limit_payload = urllib.parse.urlencode(
+                {"limit": profile.upload_limit_bytes}
+            ).encode()
+            req_limit = urllib.request.Request(
+                f"{self._qbittorrent_url}/api/v2/transfer/setUploadLimit",
+                data=limit_payload,
+            )
+            urllib.request.urlopen(req_limit, timeout=5)
             return True
         except Exception:
             return False

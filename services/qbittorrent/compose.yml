@@ -21,6 +21,13 @@ services:
     container_name: gluetun-sync
     restart: unless-stopped
     network_mode: "service:gluetun"
+    environment:
+      - QBIT_UP_LIMIT_BYTES=${QBIT_UP_LIMIT_BYTES:-1048576}
+      - QBIT_MAX_ACTIVE_DOWNLOADS=${QBIT_MAX_ACTIVE_DOWNLOADS:-5}
+      - QBIT_MAX_ACTIVE_TORRENTS=${QBIT_MAX_ACTIVE_TORRENTS:-10}
+      - QBIT_MAX_CONNEC=${QBIT_MAX_CONNEC:-800}
+      - QBIT_MAX_CONNEC_PER_TORRENT=${QBIT_MAX_CONNEC_PER_TORRENT:-200}
+      - QBIT_ASYNC_IO_THREADS=${QBIT_ASYNC_IO_THREADS:-16}
     volumes:
       - gluetun-data:/tmp/gluetun:ro
       - ./services/qbittorrent/sync_port.sh:/sync_port.sh:ro

@@ -4,6 +4,7 @@ import unittest
 
 from media_stack.domain.value_objects.credentials import ApiKey
 from media_stack.domain.value_objects.network import (
+    BitTorrentPerformanceProfile,
     IpAddress,
     PortNumber,
     ServiceEndpointUrl,
@@ -54,6 +55,19 @@ class TestNetworkValueObjects(unittest.TestCase):
             ServiceEndpointUrl("ftp://localhost:21")
         with self.assertRaises(ValueError):
             ServiceEndpointUrl("localhost:8096")
+
+    def test_bittorrent_performance_profile_defaults_and_validation(self) -> None:
+        profile = BitTorrentPerformanceProfile()
+        prefs = profile.to_qbit_preferences_dict()
+        self.assertEqual(prefs["bittorrent_protocol"], 1)
+        self.assertEqual(prefs["up_limit"], 1_048_576)
+        self.assertEqual(prefs["max_connec"], 800)
+        self.assertTrue(prefs["announce_to_all_trackers"])
+
+        with self.assertRaises(ValueError):
+            BitTorrentPerformanceProfile(bittorrent_protocol=5)
+        with self.assertRaises(ValueError):
+            BitTorrentPerformanceProfile(upload_limit_bytes=-1)
 
 
 class TestStorageValueObjects(unittest.TestCase):

@@ -25,6 +25,7 @@ from media_stack.domain.repositories.system_services import (
 )
 from media_stack.domain.repositories.vpn_gateway import IVpnGateway
 from media_stack.domain.value_objects.network import (
+    BitTorrentPerformanceProfile,
     IpAddress,
     PortNumber,
     ServiceEndpointUrl,
@@ -86,6 +87,7 @@ class FakeVpnGateway(IVpnGateway):
         self._status = status
         self._update_succeeds = update_succeeds
         self.updated_ports: List[PortNumber] = []
+        self.applied_profiles: List[BitTorrentPerformanceProfile] = []
 
     def get_tunnel_status(self) -> VpnTunnelStatus:
         return self._status
@@ -95,6 +97,10 @@ class FakeVpnGateway(IVpnGateway):
             self.updated_ports.append(port)
             return True
         return False
+
+    def apply_performance_profile(self, profile: BitTorrentPerformanceProfile) -> bool:
+        self.applied_profiles.append(profile)
+        return True
 
 
 class FakeServiceHealthGateway(IServiceHealthGateway):
