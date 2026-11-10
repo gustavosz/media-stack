@@ -1,259 +1,32 @@
-services:
-  # =========================================================================
-  # VPN (Gluetun) + Killswitch
-  # =========================================================================
-  gluetun:
-    image: qmcgaw/gluetun:latest
-    container_name: gluetun
-    restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    ports:
-      - "8080:8080"      # qBittorrent WebUI
-      - "6881:6881"      # BitTorrent TCP
-      - "6881:6881/udp"  # BitTorrent UDP
-    environment:
-      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER:-protonvpn}
-      - VPN_TYPE=${VPN_TYPE:-wireguard}
-      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY:-}
-      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES:-}
-      - SERVER_COUNTRIES=${SERVER_COUNTRIES:-Argentina}
-      - SERVER_NAMES=${SERVER_NAMES:-}
-      - VPN_PORT_FORWARDING=${VPN_PORT_FORWARDING:-on}
-      - VPN_PORT_FORWARDING_PROVIDER=protonvpn
-      - TZ=${TZ:-America/Argentina/Mendoza}
-      - UPDATER_PERIOD=24h
-    volumes:
-      - gluetun-data:/tmp/gluetun
-    networks:
-      - media-net
+# ==============================================================================
+# MEDIA STACK ORCHESTRator (Docker Compose Modular Architecture)
+# Each service is encapsulated inside ./services/<service_name>/compose.yml
+# ==============================================================================
+name: media-stack
 
-  # =========================================================================
-  # Cliente Torrent (qBittorrent) - Enrutado 100% por la VPN
-  # =========================================================================
-  qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:latest
-    container_name: qbittorrent
-    restart: unless-stopped
-    # Toda la red pasa por Gluetun (Killswitch activado)
-    network_mode: "service:gluetun"
-    depends_on:
-      gluetun:
-        condition: service_healthy
-    environment:
-      - PUID=${PUID:-501}
-      - PGID=${PGID:-20}
-      - TZ=${TZ:-America/Argentina/Mendoza}
-      - WEBUI_PORT=8080
-    volumes:
-      - ${CONFIG_DIR}/qbittorrent:/config
-      - ${DATA_DIR}/torrents:/data/torrents
-
-  # =========================================================================
-  # Sincronizador Automático de Puerto ProtonVPN (Gluetun -> qBittorrent)
-  # =========================================================================
-  gluetun-sync:
-    image: curlimages/curl:latest
-    container_name: gluetun-sync
-    restart: unless-stopped
-    network_mode: "service:gluetun"
-    volumes:
-      - gluetun-data:/tmp/gluetun:ro
-      - ./scripts/docker_sync_port.sh:/sync_port.sh:ro
-    entrypoint: ["/bin/sh", "/sync_port.sh"]
-    depends_on:
-      gluetun:
-        condition: service_healthy
-      qbittorrent:
-        condition: service_started
-
-  # =========================================================================
-  # Indexer Manager (Prowlarr) - Reemplaza al viejo Jackett
-  # =========================================================================
-  prowlarr:
-    image: lscr.io/linuxserver/prowlarr:latest
-    container_name: prowlarr
-    restart: unless-stopped
-    ports:
-      - "9696:9696"
-    environment:
-      - PUID=${PUID:-501}
-      - PGID=${PGID:-20}
-      - TZ=${TZ:-America/Argentina/Mendoza}
-    volumes:
-      - ${CONFIG_DIR}/prowlarr:/config
-    networks:
-      - media-net
-
-  # =========================================================================
-  # Solver de Cloudflare para Trackers (FlareSolverr)
-  # =========================================================================
-  flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: flaresolverr
-    restart: unless-stopped
-    ports:
-      - "8191:8191"
-    environment:
-      - LOG_LEVEL=info
-      - TZ=${TZ:-America/Argentina/Mendoza}
-    networks:
-      - media-net
-
-  # =========================================================================
-  # Gestión y Automatización de Series (Sonarr)
-  # =========================================================================
-  sonarr:
-    image: lscr.io/linuxserver/sonarr:latest
-    container_name: sonarr
-    restart: unless-stopped
-    ports:
-      - "8989:8989"
-    environment:
-      - PUID=${PUID:-501}
-      - PGID=${PGID:-20}
-      - TZ=${TZ:-America/Argentina/Mendoza}
-    volumes:
-      - ${CONFIG_DIR}/sonarr:/config
-      # Monta /data entero para permitir hardlinks entre torrents y media
-      - ${DATA_DIR}:/data
-    networks:
-      - media-net
-
-  # =========================================================================
-  # Gestión y Automatización de Películas (Radarr)
-  # =========================================================================
-  radarr:
-    image: lscr.io/linuxserver/radarr:latest
-    container_name: radarr
-    restart: unless-stopped
-    ports:
-      - "7878:7878"
-    environment:
-      - PUID=${PUID:-501}
-      - PGID=${PGID:-20}
-      - TZ=${TZ:-America/Argentina/Mendoza}
-    volumes:
-      - ${CONFIG_DIR}/radarr:/config
-      # Monta /data entero para permitir hardlinks entre torrents y media
-      - ${DATA_DIR}:/data
-    networks:
-      - media-net
-
-  # =========================================================================
-  # Descarga Automática de Subtítulos (Bazarr)
-  # =========================================================================
-  bazarr:
-    image: lscr.io/linuxserver/bazarr:latest
-    container_name: bazarr
-    restart: unless-stopped
-    ports:
-      - "6767:6767"
-    environment:
-      - PUID=${PUID:-501}
-      - PGID=${PGID:-20}
-      - TZ=${TZ:-America/Argentina/Mendoza}
-    volumes:
-      - ${CONFIG_DIR}/bazarr:/config
-      - ${DATA_DIR}/media:/data/media
-    networks:
-      - media-net
-
-  # =========================================================================
-  # Servidor de Streaming de Medios (Jellyfin)
-  # =========================================================================
-  jellyfin:
-    image: lscr.io/linuxserver/jellyfin:latest
-    container_name: jellyfin
-    restart: unless-stopped
-    ports:
-      - "8096:8096"
-    environment:
-      - PUID=${PUID:-501}
-      - PGID=${PGID:-20}
-      - TZ=${TZ:-America/Argentina/Mendoza}
-    volumes:
-      - ${CONFIG_DIR}/jellyfin:/config
-      - ${DATA_DIR}/media:/data/media
-    networks:
-      - media-net
-
-  # =========================================================================
-  # Portal de Peticiones y Catálogo Estilo Netflix (Jellyseerr)
-  # =========================================================================
-  jellyseerr:
-    image: fallenbagel/jellyseerr:latest
-    container_name: jellyseerr
-    restart: unless-stopped
-    ports:
-      - "5055:5055"
-    environment:
-      - LOG_LEVEL=info
-      - TZ=${TZ:-America/Argentina/Mendoza}
-    volumes:
-      - ${CONFIG_DIR}/jellyseerr:/app/config
-    networks:
-      - media-net
-
-  # =========================================================================
-  # Gestión y Automatización de Libros / Audiobooks (Chaptarr - Sucesor activo de Readarr)
-  # =========================================================================
-  chaptarr:
-    image: chaptarr/chaptarr:latest
-    container_name: chaptarr
-    restart: unless-stopped
-    expose:
-      - "8789"
-    environment:
-      - PUID=${PUID:-501}
-      - PGID=${PGID:-20}
-      - TZ=${TZ:-America/Argentina/Mendoza}
-    volumes:
-      - ${CONFIG_DIR}/chaptarr:/config
-      # Monta /data entero para permitir hardlinks entre torrents/books y media/books
-      - ${DATA_DIR}:/data
-    networks:
-      - media-net
-
-  # Proxy inteligente para Chaptarr (Reenvío a Goodreads y enriquecimiento de carátulas para nzb360)
-  chaptarr-proxy:
-    image: python:3.11-alpine
-    container_name: chaptarr-proxy
-    restart: unless-stopped
-    command: python3 -u /app/proxy.py
-    ports:
-      - "8787:8787"
-      - "8789:8787"
-    volumes:
-      - ${CONFIG_DIR}/chaptarr-proxy/proxy.py:/app/proxy.py:ro
-    depends_on:
-      - chaptarr
-    networks:
-      - media-net
-
-  # =========================================================================
-  # Biblioteca Web y Envío al Kindle (Calibre-Web)
-  # =========================================================================
-  calibre-web:
-    image: lscr.io/linuxserver/calibre-web:latest
-    container_name: calibre-web
-    restart: unless-stopped
-    ports:
-      - "8083:8083"
-    environment:
-      - PUID=${PUID:-501}
-      - PGID=${PGID:-20}
-      - TZ=${TZ:-America/Argentina/Mendoza}
-      - DOCKER_MODS=linuxserver/mods:universal-calibre
-    volumes:
-      - ${CONFIG_DIR}/calibre-web:/config
-      - ${DATA_DIR}/media/books:/books
-      - ${DATA_DIR}/import_books:/import_books
-      - ${CONFIG_DIR}/calibre-web/custom-cont-init.d:/custom-cont-init.d
-    networks:
-      - media-net
+include:
+  - path: services/gluetun/compose.yml
+    project_directory: .
+  - path: services/qbittorrent/compose.yml
+    project_directory: .
+  - path: services/prowlarr/compose.yml
+    project_directory: .
+  - path: services/flaresolverr/compose.yml
+    project_directory: .
+  - path: services/sonarr/compose.yml
+    project_directory: .
+  - path: services/radarr/compose.yml
+    project_directory: .
+  - path: services/bazarr/compose.yml
+    project_directory: .
+  - path: services/jellyfin/compose.yml
+    project_directory: .
+  - path: services/jellyseerr/compose.yml
+    project_directory: .
+  - path: services/chaptarr/compose.yml
+    project_directory: .
+  - path: services/calibre-web/compose.yml
+    project_directory: .
 
 networks:
   media-net:

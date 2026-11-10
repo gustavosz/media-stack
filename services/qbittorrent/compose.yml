@@ -1,0 +1,32 @@
+services:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    network_mode: "service:gluetun"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    environment:
+      - PUID=${PUID:-501}
+      - PGID=${PGID:-20}
+      - TZ=${TZ:-America/Argentina/Mendoza}
+      - WEBUI_PORT=8080
+    volumes:
+      - ${CONFIG_DIR}/qbittorrent:/config
+      - ${DATA_DIR}/torrents:/data/torrents
+
+  gluetun-sync:
+    image: curlimages/curl:latest
+    container_name: gluetun-sync
+    restart: unless-stopped
+    network_mode: "service:gluetun"
+    volumes:
+      - gluetun-data:/tmp/gluetun:ro
+      - ./services/qbittorrent/sync_port.sh:/sync_port.sh:ro
+    entrypoint: ["/bin/sh", "/sync_port.sh"]
+    depends_on:
+      gluetun:
+        condition: service_healthy
+      qbittorrent:
+        condition: service_started

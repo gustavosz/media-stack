@@ -1,0 +1,16 @@
+services:
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    ports:
+      - "8096:8096"
+    environment:
+      - PUID=${PUID:-501}
+      - PGID=${PGID:-20}
+      - TZ=${TZ:-America/Argentina/Mendoza}
+    volumes:
+      - ${CONFIG_DIR}/jellyfin:/config
+      - ${DATA_DIR}/media:/data/media
+    networks:
+      - media-net

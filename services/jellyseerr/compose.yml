@@ -1,0 +1,14 @@
+services:
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    restart: unless-stopped
+    ports:
+      - "5055:5055"
+    environment:
+      - LOG_LEVEL=info
+      - TZ=${TZ:-America/Argentina/Mendoza}
+    volumes:
+      - ${CONFIG_DIR}/jellyseerr:/app/config
+    networks:
+      - media-net

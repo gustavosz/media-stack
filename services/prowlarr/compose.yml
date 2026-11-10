@@ -1,0 +1,15 @@
+services:
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    ports:
+      - "9696:9696"
+    environment:
+      - PUID=${PUID:-501}
+      - PGID=${PGID:-20}
+      - TZ=${TZ:-America/Argentina/Mendoza}
+    volumes:
+      - ${CONFIG_DIR}/prowlarr:/config
+    networks:
+      - media-net

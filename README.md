@@ -1,74 +1,65 @@
-# 🎬 Media Stack — Servidor Multimedia Automatizado con Docker y VPN
+# 🎬 Media Stack — Home Streaming, eBooks & Automation Platform
 
-Stack completo y automatizado para correr tu propio servidor de películas y series en casa con **Docker** (optimizado para **macOS / OrbStack** y **Linux**), integrando la arquitectura de **YAMS** y las mejores prácticas de **TRaSH Guides**.
+Plataforma multimedia completa, autohospedada y automatizada sobre **Docker Compose Modular**, diseñada bajo principios de **DDD (Domain-Driven Design)** y **Arquitectura Hexagonal** en Python.
 
----
-
-## 🌟 Características Principales
-
-- 🛡️ **Privacidad Total con VPN y Killswitch**: qBittorrent descarga encapsulado dentro de un túnel WireGuard (**Gluetun**) con soporte de reenvío de puertos (Port Forwarding) para **ProtonVPN**. Si la VPN se desconecta, el tráfico se corta inmediatamente.
-- ⚡ **Hardlinks Atómicos (TRaSH Guides)**: Las descargas terminadas se enlazan físicamente a tu biblioteca final sin duplicar espacio en disco ni gastar I/O.
-- 🔍 **Prowlarr Integrado**: Indexador moderno que sincroniza automáticamente trackers y sitios de torrents con Sonarr y Radarr.
-- 🛡️ **FlareSolverr**: Supera retos anti-bot de Cloudflare en trackers públicos.
-- 📺 **Jellyfin**: Servidor de streaming 100% de código abierto (sin costos ni paywalls).
-- 🍿 **Jellyseerr**: Interfaz visual estilo Netflix para que tú y tu familia busquen y soliciten contenido en un clic.
-- 💬 **Bazarr**: Descarga automática de subtítulos para cada versión específica de video.
+Incluye protección de tráfico P2P con **ProtonVPN WireGuard + Killswitch**, sincronización automática de puertos **NAT-PMP**, **Hardlinks APFS** (cero duplicación de espacio en disco), pipeline de importación y envío automático de libros a **Amazon Kindle**, y un daemon de **auto-recuperación ante desconexiones de discos externos**.
 
 ---
 
-## 📐 Arquitectura
+## 🏗️ Arquitectura del Proyecto
 
-```mermaid
-flowchart TD
-    User(["Usuario / Smart TV"]) -->|Navega / Pide contenido| JS["Jellyseerr :5055"]
-    User -->|Streaming de video| JF["Jellyfin :8096"]
-    
-    JS -->|Solicita serie| Sonarr["Sonarr :8989"]
-    JS -->|Solicita película| Radarr["Radarr :7878"]
-    
-    subgraph Indexers ["Indexadores"]
-        Prowlarr["Prowlarr :9696"] -->|Sincroniza trackers| Sonarr
-        Prowlarr -->|Sincroniza trackers| Radarr
-        Prowlarr -->|Bypass Cloudflare| FS["FlareSolverr :8191"]
-    end
-    
-    subgraph VPN ["Red Protegida VPN (Gluetun)"]
-        Tunnel["Túnel ProtonVPN WireGuard"]
-        QB["qBittorrent WebUI :8080"]
-    end
-    
-    Sonarr -->|Envía Torrents por VPN| QB
-    Radarr -->|Envía Torrents por VPN| QB
-    
-    subgraph Storage ["Almacenamiento (TRaSH Guides)"]
-        QB -->|Escribe descargas| TOR["/data/torrents/"]
-        Sonarr -.->|Hardlinks atómicos| MED["/data/media/"]
-        Radarr -.->|Hardlinks atómicos| MED
-        Bazarr["Bazarr :6767"] -->|Descarga .srt| MED
-        JF -->|Lee biblioteca final| MED
-    end
+El proyecto separa estrictamente la **definición de servicios en contenedores (`services/`)**, la **lógica de dominio y automatización del host (`src/media_stack/`)** y los **datos de estado en tiempo de ejecución (`config/`)**:
+
+```text
+media-stack/
+├── .env.example                     # Plantilla de variables de entorno
+├── docker-compose.yml               # Orquestador declarativo principal (usa `include`)
+├── Makefile                         # Punto de entrada único para operar el stack
+├── README.md                        # Documentación general
+│
+├── services/                        # 📦 DEFINICIÓN MODULAR DE SERVICIOS (Docker)
+│   ├── gluetun/compose.yml          # Túnel VPN WireGuard + Killswitch
+│   ├── qbittorrent/                 # Cliente BitTorrent + Sidecar NAT-PMP (sync_port.sh)
+│   ├── prowlarr/compose.yml         # Gestor centralizado de indexers/trackers
+│   ├── flaresolverr/compose.yml     # Resolución de retos Cloudflare
+│   ├── radarr/compose.yml           # Automatización de películas
+│   ├── sonarr/compose.yml           # Automatización de series de TV
+│   ├── bazarr/compose.yml           # Automatización de subtítulos
+│   ├── jellyfin/compose.yml         # Servidor de streaming multimedia
+│   ├── jellyseerr/compose.yml       # Catálogo de solicitudes (estilo Netflix)
+│   ├── chaptarr/                    # Gestión de libros + Microservicio Reverse Proxy Goodreads
+│   └── calibre-web/                 # Biblioteca de eBooks + Pipeline de envío automático a Kindle
+│
+├── src/                             # 🧠 CORE DE ADMINISTRACIÓN Y MONITOREO (DDD + Hexagonal)
+│   └── media_stack/
+│       ├── domain/                  # Entidades, Value Objects e Interfaces (Ports)
+│       │   ├── entities/            # ContainerNode, ExternalDisk, VpnTunnelStatus, MovieMediaAsset
+│       │   ├── value_objects/       # PortNumber, IpAddress, VolumeMountPath, ApiKey, InodeLinkCount
+│       │   └── repositories/        # IContainerRepository, IDiskGateway, IVpnGateway, etc.
+│       ├── application/             # Casos de Uso desacoplados
+│       │   ├── audit_stack_use_case.py
+│       │   ├── monitor_disk_use_case.py
+│       │   ├── sync_vpn_port_use_case.py
+│       │   └── manage_daemon_use_case.py
+│       ├── infrastructure/          # Adaptadores concretos (Docker CLI, DiskUtil, HTTP, Launchd)
+│       └── interface/               # CLI unificada, Presenters ANSI y Contenedor de Inyección (DI)
+│
+└── config/                          # 🔒 ESTADO Y BASES DE DATOS LOCALES (Ignorado en Git)
 ```
 
 ---
 
 ## 🚀 Inicio Rápido
 
-### 1. Clonar el repositorio
+### 1. Clonar y configurar variables de entorno
 
 ```bash
-git clone https://github.com/TU-USUARIO/media-stack.git
+git clone <url-del-repositorio> media-stack
 cd media-stack
-```
-
-### 2. Configurar variables de entorno
-
-Copia la plantilla `.env.example`:
-
-```bash
 cp .env.example .env
 ```
 
-Edita `.env` con tus rutas y credenciales de ProtonVPN:
+Edita `.env` con tus rutas y credenciales de WireGuard (ProtonVPN):
 
 ```env
 PUID=501
@@ -78,7 +69,6 @@ TZ=America/Argentina/Mendoza
 CONFIG_DIR=./config
 DATA_DIR=/Volumes/Media/data
 
-# Configuración ProtonVPN (WireGuard)
 VPN_SERVICE_PROVIDER=protonvpn
 VPN_TYPE=wireguard
 WIREGUARD_PRIVATE_KEY=tu_clave_privada_aqui
@@ -89,64 +79,70 @@ VPN_PORT_FORWARDING_PROVIDER=protonvpn
 ```
 
 > **¿Cómo obtener las claves de ProtonVPN?**
-> 1. Entra a [account.protonvpn.com/downloads](https://account.protonvpn.com/downloads)
+> 1. Entra a [account.protonvpn.com/downloads](https://account.protonvpn.com/downloads).
 > 2. En **WireGuard Configuration**, elige plataforma **Router** o **GNU/Linux**.
-> 3. Marca la casilla **"NAT-PMP (Port Forwarding)"**.
-> 4. Descarga el archivo `.conf` y copia el `PrivateKey` y `Address` a tu `.env`.
+> 3. Activa la casilla **"NAT-PMP (Port Forwarding)"**.
+> 4. Descarga el archivo `.conf` y copia `PrivateKey` y `Address` a tu `.env`.
 
-### 3. Iniciar el stack
+### 2. Preparar carpetas en el disco externo
 
 ```bash
-docker compose up -d
+mkdir -p /Volumes/Media/data/{torrents/{movies,series,books},media/{movies,series,books},import_books}
+```
+
+### 3. Levantar el Stack
+
+```bash
+make up
 ```
 
 ---
 
-## 🌐 Servicios y Puertos
+## 🛠️ Comandos de Operación (`Makefile`)
 
-| Servicio | URL Local | Descripción |
-| :--- | :--- | :--- |
-| **Jellyseerr** | `http://localhost:5055` | Portal de solicitudes y descubrimiento |
-| **Jellyfin** | `http://localhost:8096` | Servidor de streaming y reproducción |
-| **qBittorrent** | `http://localhost:8080` | Gestor de descargas (vía VPN Gluetun) |
-| **Prowlarr** | `http://localhost:9696` | Administrador de indexers/trackers |
-| **Sonarr** | `http://localhost:8989` | Gestión automatizada de series |
-| **Radarr** | `http://localhost:7878` | Gestión automatizada de películas |
-| **Bazarr** | `http://localhost:6767` | Descarga de subtítulos |
+Ejecuta `make help` para ver todos los comandos disponibles:
+
+| Comando | Descripción |
+| :--- | :--- |
+| `make up` | Levanta todos los servicios del Media Stack en segundo plano |
+| `make down` | Detiene todos los contenedores del stack |
+| `make restart` | Reinicia todos los contenedores |
+| `make ps` | Muestra el estado actual de los contenedores |
+| `make logs` | Muestra los logs en tiempo real de todos los servicios |
+| `make audit` | Ejecuta la auditoría completa (Contenedores, VPN, APIs, Hardlinks APFS y Subtítulos) |
+| `make sync-port` | Verifica y sincroniza manualmente el puerto NAT-PMP de ProtonVPN con qBittorrent |
+| `make daemon-install` | Instala y activa el daemon de auto-recuperación de discos externos en macOS (`launchd`) |
+| `make daemon-status` | Verifica el estado actual del daemon de monitoreo de discos |
+| `make daemon-uninstall` | Detiene y elimina el daemon de auto-recuperación de discos en macOS |
 
 ---
 
-## 🔗 Configuración de Conexiones Internas
+## 🌐 Catálogo de Servicios y Puertos
 
-Dentro de la red de Docker (`media-net`), los contenedores se comunican por nombre:
-
-- **Download Client en Sonarr y Radarr:**
-  - Tipo: **qBittorrent**
-  - Host: `gluetun` *(al compartir network_mode con Gluetun, ese es su host de red)*
-  - Port: `8080`
-- **Root Folders en Sonarr/Radarr:**
-  - Radarr: `/data/media/movies`
-  - Sonarr: `/data/media/series`
-- **Prowlarr ➡️ Sonarr & Radarr:**
-  - Sonarr: `http://sonarr:8989`
-  - Radarr: `http://radarr:7878`
-  *(Prowlarr sincronizará todos tus trackers a ambos automáticamente).*
+| Servicio | URL Local | Descripción |
+| :--- | :--- | :--- |
+| **Jellyseerr** | `http://localhost:5055` | Portal de solicitudes de películas y series |
+| **Jellyfin** | `http://localhost:8096` | Servidor de streaming y reproducción en TV/móviles |
+| **qBittorrent** | `http://localhost:8080` | Cliente de descargas BitTorrent (100% enrutado por VPN) |
+| **Prowlarr** | `http://localhost:9696` | Gestor centralizado de indexers y trackers |
+| **Sonarr** | `http://localhost:8989` | Automatización y monitoreo de series de TV |
+| **Radarr** | `http://localhost:7878` | Automatización y monitoreo de películas |
+| **Bazarr** | `http://localhost:6767` | Descarga automática de subtítulos (`.srt`) |
+| **Chaptarr (Proxy)** | `http://localhost:8787` | Automatización de libros enriquecida con metadatos Goodreads |
+| **Calibre-Web** | `http://localhost:8083` | Biblioteca web de eBooks y envío directo a Kindle |
 
 ---
 
 ## 🛡️ Auto-Recuperación de Discos Externos (macOS)
 
-Si utilizas un disco duro externo como almacenamiento principal (`DATA_DIR`), el daemon **`disk_watcher`** supervisa el estado del volumen. Si el disco se desconecta y reconecta, o si los contenedores quedan con monturas rotas (*stale mounts*), el daemon reinicia automáticamente los servicios afectados y dispara un reescaneo de Jellyfin sin intervención manual.
+Si utilizas un disco duro externo como almacenamiento (`DATA_DIR`), una desconexión accidental puede dejar a los contenedores de Docker con monturas huérfanas (*stale mounts*).
 
-Para instalarlo como servicio de inicio en tu usuario de macOS:
-```bash
-./scripts/install_disk_watcher.sh
-```
+El caso de uso `MonitorDiskRecoveryUseCase` supervisa continuamente el volumen físico mediante `DiskArbitration` de macOS y verifica la salud de los puntos de montaje internos de los contenedores. Al reconectar el disco, reinicia automáticamente los contenedores afectados y solicita un refresco de biblioteca a Jellyfin.
 
-Para verificar su estado o desinstalarlo:
+Para dejarlo instalado de forma permanente al iniciar sesión en tu Mac:
+
 ```bash
-python3 scripts/disk_watcher.py --status
-./scripts/uninstall_disk_watcher.sh
+make daemon-install
 ```
 
 ---

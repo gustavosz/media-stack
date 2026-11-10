@@ -15,7 +15,6 @@ while true; do
     PORT=$(cat "$PORT_FILE" 2>/dev/null | tr -d '[:space:]')
     
     if [ -n "$PORT" ] && [ "$PORT" -gt 0 ] 2>/dev/null; then
-      # Obtener el puerto de escucha configurado actualmente en qBittorrent
       CURRENT_PORT=$(curl -s --max-time 5 "${QBIT_URL}/api/v2/app/preferences" 2>/dev/null | grep -o '"listen_port":[0-9]*' | cut -d':' -f2)
       
       if [ -n "$CURRENT_PORT" ]; then

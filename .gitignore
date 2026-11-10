@@ -3,10 +3,15 @@
 *.env
 !.env.example
 
-# Configuraciones de aplicaciones, bases de datos SQLite y cachés
+# Configuraciones de aplicaciones, bases de datos SQLite y cachés de runtime
 config/
 data/
 docs/
+
+# Cachés de Python
+__pycache__/
+*.py[cod]
+*$py.class
 
 # Archivos del sistema macOS
 .DS_Store

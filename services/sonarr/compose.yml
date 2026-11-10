@@ -1,0 +1,16 @@
+services:
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    ports:
+      - "8989:8989"
+    environment:
+      - PUID=${PUID:-501}
+      - PGID=${PGID:-20}
+      - TZ=${TZ:-America/Argentina/Mendoza}
+    volumes:
+      - ${CONFIG_DIR}/sonarr:/config
+      - ${DATA_DIR}:/data
+    networks:
+      - media-net
