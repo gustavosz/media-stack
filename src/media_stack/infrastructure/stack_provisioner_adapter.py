@@ -525,6 +525,20 @@ class HttpAndFilesystemStackProvisioner(IStackProvisioner):
                 content = content.replace("  minimum_score: 90", "  minimum_score: 80", 1)
                 modified = True
 
+            if "  use_subsync: false" in content:
+                content = content.replace("  use_subsync: false", "  use_subsync: true", 1)
+                content = content.replace(
+                    "  use_subsync_threshold: false",
+                    "  use_subsync_threshold: true",
+                    1,
+                )
+                content = content.replace(
+                    "  use_subsync_movie_threshold: false",
+                    "  use_subsync_movie_threshold: true",
+                    1,
+                )
+                modified = True
+
             if modified:
                 yaml_path.write_text(content, encoding="utf-8")
 
