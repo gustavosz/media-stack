@@ -525,7 +525,7 @@ class HttpAndFilesystemStackProvisioner(IStackProvisioner):
                 content = content.replace("  minimum_score: 90", "  minimum_score: 80", 1)
                 modified = True
 
-            if "  use_subsync: false" in content:
+            if "  use_subsync: false" in content or "  no_fix_framerate: true" in content:
                 content = content.replace("  use_subsync: false", "  use_subsync: true", 1)
                 content = content.replace(
                     "  use_subsync_threshold: false",
@@ -535,6 +535,26 @@ class HttpAndFilesystemStackProvisioner(IStackProvisioner):
                 content = content.replace(
                     "  use_subsync_movie_threshold: false",
                     "  use_subsync_movie_threshold: true",
+                    1,
+                )
+                content = content.replace(
+                    "  no_fix_framerate: true",
+                    "  no_fix_framerate: false",
+                    1,
+                )
+                content = content.replace(
+                    "  auto_use_original_language: false",
+                    "  auto_use_original_language: true",
+                    1,
+                )
+                content = content.replace(
+                    "  max_offset_seconds: 60",
+                    "  max_offset_seconds: 120",
+                    1,
+                )
+                content = content.replace(
+                    "  quality_max_offset_seconds: 30",
+                    "  quality_max_offset_seconds: 120",
                     1,
                 )
                 modified = True
