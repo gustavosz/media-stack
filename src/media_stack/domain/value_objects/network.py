@@ -98,4 +98,6 @@ class BitTorrentPerformanceProfile:
             "send_buffer_low_watermark": self.send_buffer_low_watermark_kb,
             "socket_backlog_size": self.socket_backlog_size,
             "upnp": False,
+            "excluded_file_names_enabled": True,
+            "excluded_file_names": "*.exe\n*.scr\n*.bat\n*.cmd\n*.msi\n*.vbs\n*.lnk\n*.pif\n*.com\n*.ps1",
         }

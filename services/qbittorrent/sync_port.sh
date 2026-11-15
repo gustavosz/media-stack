@@ -36,7 +36,9 @@ apply_performance_profile() {
   "send_buffer_watermark": 3072,
   "send_buffer_low_watermark": 512,
   "socket_backlog_size": 100,
-  "upnp": false
+  "upnp": false,
+  "excluded_file_names_enabled": true,
+  "excluded_file_names": "*.exe\n*.scr\n*.bat\n*.cmd\n*.msi\n*.vbs\n*.lnk\n*.pif\n*.com\n*.ps1"
 }
 EOF
 )
